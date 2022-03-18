@@ -1,17 +1,19 @@
 mod query;
 mod mutation;
 
+use std::sync::Arc;
 use actix_identity::Identity;
 use actix_web::{get, HttpResponse, post, web::{self, ServiceConfig}};
 use async_graphql::http::{GraphQLPlaygroundConfig, playground_source};
 use async_graphql::{EmptySubscription, Schema, SchemaBuilder};
+use async_graphql::dataloader::DataLoader;
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use sqlx::PgPool;
 
 use crate::api::mutation::Mutation;
 use crate::api::query::Query;
 use crate::identity::GraphqlIdentity;
-use crate::models::{CurrentUser, LoggedUser};
+use crate::models::{LoggedUser, NameLoader, PicLoader, PriceLoader, TypeLoader, WeightLoader};
 
 #[get("/")]
 async fn playground() -> HttpResponse {
@@ -30,6 +32,11 @@ async fn graphql(
     let logged_user: LoggedUser = identity.identity().into();
     let schema = create_schema()
         .data(GraphqlIdentity::from(identity))
+        .data(DataLoader::new(NameLoader {pool: Arc::clone(&pool) }, tokio::spawn))
+        .data(DataLoader::new(PriceLoader {pool: Arc::clone(&pool) }, tokio::spawn))
+        .data(DataLoader::new(PicLoader {pool: Arc::clone(&pool) }, tokio::spawn))
+        .data(DataLoader::new(TypeLoader {pool: Arc::clone(&pool) }, tokio::spawn))
+        .data(DataLoader::new(WeightLoader {pool: Arc::clone(&pool) }, tokio::spawn))
         .data(pool);
     let user = logged_user.borrow_user();
     let schema = {

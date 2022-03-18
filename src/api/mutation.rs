@@ -1,9 +1,9 @@
 use actix_web::web::Data;
 use async_graphql::{Context, Object};
-use sqlx::{PgPool, query, query_as};
+use sqlx::{PgPool, query, query_as, query_scalar};
 use crate::identity::GraphqlIdentity;
 use crate::jwt::create_jwt;
-use crate::models::{ChangeUserPassword, Credentials, CurrentUser};
+use crate::models::{ChangeUserPassword, Credentials, CurrentUser, EditProduct, EditProductType, NewProduct, Product, ProductType};
 use crate::guards::{AdminGuard, AuthGuard};
 
 pub struct Mutation;
@@ -43,5 +43,69 @@ impl Mutation {
             .execute(&mut pool)
             .await?;
         Ok("Password has been successfully changed")
+    }
+    async fn add_product(&self, ctx: &Context<'_>, product: NewProduct) -> anyhow::Result<Product> {
+        let mut pool = ctx.data_unchecked::<Data<PgPool>>().acquire().await?;
+        let id = query_scalar::<_, i32>(
+            "insert into products (name, pic, price, type, weight, description) values ($1, $2, $3, $4, $5, $6)\
+                 returning id")
+            .bind(product.name)
+            .bind(product.pic)
+            .bind(product.price)
+            .bind(product.r#type)
+            .bind(product.weight)
+            .bind(product.description)
+            .fetch_one(&mut pool)
+            .await?;
+        Ok(Product { id })
+    }
+    async fn edit_product(&self, ctx: &Context<'_>, product: EditProduct) -> anyhow::Result<Option<Product>> {
+        let mut pool = ctx.data_unchecked::<Data<PgPool>>().acquire().await?;
+        let r = query_scalar::<_, i32>(
+            "update products set name = $1, pic = $2, price = $3, type = $4, weight= $5, description= $6 where id = $7
+                 returning id")
+            .bind(product.name)
+            .bind(product.pic)
+            .bind(product.price)
+            .bind(product.r#type)
+            .bind(product.weight)
+            .bind(product.description)
+            .bind(product.id)
+            .fetch_optional(&mut pool)
+            .await?;
+        Ok(r.map(|id| Product {id}))
+    }
+    async fn delete_product(&self, ctx: &Context<'_>, product_id: i32) -> anyhow::Result<&str> {
+        let mut pool = ctx.data_unchecked::<Data<PgPool>>().acquire().await?;
+        query("delete products where id = $1")
+            .bind(product_id)
+            .execute(&mut pool)
+            .await?;
+        Ok("Product has been successfully deleted")
+    }
+    async fn add_product_type(&self, ctx: &Context<'_>, name: String) -> anyhow::Result<ProductType> {
+        let mut pool = ctx.data_unchecked::<Data<PgPool>>().acquire().await?;
+        let r#type = query_as::<_, ProductType>("insert into product_types (name) values ($1) returning id, name")
+            .bind(name)
+            .fetch_one(&mut pool)
+            .await?;
+        Ok(r#type)
+    }
+    async fn delete_product_type(&self, ctx: &Context<'_>, type_id: i32) -> anyhow::Result<&str> {
+        let mut pool = ctx.data_unchecked::<Data<PgPool>>().acquire().await?;
+        query("delete product_types where id = $1")
+            .bind(type_id)
+            .execute(&mut pool)
+            .await?;
+        Ok("Product type has been successfully deleted")
+    }
+    async fn edit_product_type(&self, ctx: &Context<'_>, r#type: EditProductType) -> anyhow::Result<ProductType> {
+        let mut pool = ctx.data_unchecked::<Data<PgPool>>().acquire().await?;
+        let r#type = query_as::<_, ProductType>("")
+            .bind(r#type.name)
+            .bind(r#type.id)
+            .fetch_one(&mut pool)
+            .await?;
+        Ok(r#type)
     }
 }

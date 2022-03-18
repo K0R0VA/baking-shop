@@ -1,4 +1,4 @@
-use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, TokenData, Validation};
+use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, Validation};
 use serde::{Serialize, Deserialize};
 use crate::models::CurrentUser;
 
@@ -12,6 +12,7 @@ pub struct SerializedClaims<'a> {
 
 #[derive(Deserialize)]
 pub struct DeserializedClaims {
+    #[allow(dead_code)]
     exp: usize,
     user: CurrentUser,
 }

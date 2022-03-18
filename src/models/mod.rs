@@ -1,5 +1,5 @@
 mod user;
-mod product;
+mod products;
 
 pub use user::*;
-pub use product::*;
+pub use products::*;

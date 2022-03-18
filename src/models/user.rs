@@ -1,6 +1,3 @@
-use std::future::{Ready, ready};
-use actix_identity::Identity;
-use actix_web::{FromRequest, HttpMessage};
 use crate::jwt::decode_identity;
 
 pub struct User {
@@ -76,7 +73,7 @@ impl Display for ServiceError {
         unimplemented!();
     }
 }
-// impl ResponseError trait allows to convert our errors into http responses with appropriate data
+
 impl ResponseError for ServiceError {
     fn error_response(&self) -> HttpResponse {
         unimplemented!();
