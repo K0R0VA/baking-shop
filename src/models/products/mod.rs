@@ -66,6 +66,7 @@ pub struct ProductType {
     pub id: i32,
     pub name: String,
 }
+
 #[derive(InputObject)]
 pub struct EditProductType {
     pub id: i32,

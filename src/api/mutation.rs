@@ -44,6 +44,7 @@ impl Mutation {
             .await?;
         Ok("Password has been successfully changed")
     }
+    #[graphql(guard = "AdminGuard")]
     async fn add_product(&self, ctx: &Context<'_>, product: NewProduct) -> anyhow::Result<Product> {
         let mut pool = ctx.data_unchecked::<Data<PgPool>>().acquire().await?;
         let id = query_scalar::<_, i32>(
@@ -59,6 +60,7 @@ impl Mutation {
             .await?;
         Ok(Product { id })
     }
+    #[graphql(guard = "AdminGuard")]
     async fn edit_product(&self, ctx: &Context<'_>, product: EditProduct) -> anyhow::Result<Option<Product>> {
         let mut pool = ctx.data_unchecked::<Data<PgPool>>().acquire().await?;
         let r = query_scalar::<_, i32>(
@@ -75,6 +77,7 @@ impl Mutation {
             .await?;
         Ok(r.map(|id| Product {id}))
     }
+    #[graphql(guard = "AdminGuard")]
     async fn delete_product(&self, ctx: &Context<'_>, product_id: i32) -> anyhow::Result<&str> {
         let mut pool = ctx.data_unchecked::<Data<PgPool>>().acquire().await?;
         query("delete products where id = $1")
@@ -83,6 +86,7 @@ impl Mutation {
             .await?;
         Ok("Product has been successfully deleted")
     }
+    #[graphql(guard = "AdminGuard")]
     async fn add_product_type(&self, ctx: &Context<'_>, name: String) -> anyhow::Result<ProductType> {
         let mut pool = ctx.data_unchecked::<Data<PgPool>>().acquire().await?;
         let r#type = query_as::<_, ProductType>("insert into product_types (name) values ($1) returning id, name")
@@ -91,6 +95,7 @@ impl Mutation {
             .await?;
         Ok(r#type)
     }
+    #[graphql(guard = "AdminGuard")]
     async fn delete_product_type(&self, ctx: &Context<'_>, type_id: i32) -> anyhow::Result<&str> {
         let mut pool = ctx.data_unchecked::<Data<PgPool>>().acquire().await?;
         query("delete product_types where id = $1")
@@ -99,6 +104,7 @@ impl Mutation {
             .await?;
         Ok("Product type has been successfully deleted")
     }
+    #[graphql(guard = "AdminGuard")]
     async fn edit_product_type(&self, ctx: &Context<'_>, r#type: EditProductType) -> anyhow::Result<ProductType> {
         let mut pool = ctx.data_unchecked::<Data<PgPool>>().acquire().await?;
         let r#type = query_as::<_, ProductType>("")
