@@ -11,6 +11,7 @@ use sqlx::PgPool;
 use crate::api::mutation::Mutation;
 use crate::api::query::Query;
 use crate::identity::GraphqlIdentity;
+use crate::models::{CurrentUser, LoggedUser};
 
 #[get("/")]
 async fn playground() -> HttpResponse {
@@ -26,8 +27,19 @@ async fn graphql(
     identity: Identity,
     req: GraphQLRequest,
 ) -> GraphQLResponse {
-    let schema = create_schema().enable_federation().data(GraphqlIdentity::from(identity)).data(pool).finish();
-    schema.execute(req.into_inner()).await.into()
+    let logged_user: LoggedUser = identity.identity().into();
+    let schema = create_schema()
+        .data(GraphqlIdentity::from(identity))
+        .data(pool);
+    let user = logged_user.borrow_user();
+    let schema = {
+        if let Some(user) = user {
+            schema.data(user).data(logged_user)
+        } else {
+            schema.data(logged_user)
+        }
+    };
+    schema.finish().execute(req.into_inner()).await.into()
 }
 
 pub fn api_config(config: &mut ServiceConfig) {
